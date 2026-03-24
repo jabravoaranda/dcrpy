@@ -9,7 +9,7 @@ BANDS = ["ka", "w"]
 YEAR, MONTH, DAY = 2024, 3, 13
 HOUR_STR = "150001"
 
-MAIN_DIR = Path(r"tests/datos")
+MAIN_DIR = Path(r"tests/data")
 OUTPUT_DIR = MAIN_DIR / "PRODUCTS" / "nebula"
 KA_DIR = (
     MAIN_DIR
