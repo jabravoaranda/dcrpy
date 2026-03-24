@@ -66,7 +66,7 @@ def test_plot_testing():
     data["doppler_spectrum_v_dBZe"].plot(ax=ax, color="b", label="V")  # type: ignore
     ax.legend()
 
-    fig.savefig("testing_spectrum_v-h-t.png")
+    fig.savefig(OUTPUT_DIR / "testing_spectrum_v-h-t.png")
     plt.close(fig)
 
     fig, ax = plt.subplots(figsize=(10, 7))
@@ -76,7 +76,7 @@ def test_plot_testing():
     )
     ax.set_ylim(-10, 2)
     ax.legend()
-    fig.savefig("testing-sZDR.png")
+    fig.savefig(OUTPUT_DIR / "testing-sZDR.png")
     plt.close(fig)
 
     if kwargs.get("velocity_limits", None) is not None:

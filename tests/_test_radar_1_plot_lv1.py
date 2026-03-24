@@ -2,7 +2,7 @@ import numpy as np
 from pathlib import Path
 from datetime import datetime, timedelta
 
-from gfatpy.radar.rpg_nc import rpg
+from dcrpy.rpg_nc import rpg
 
 ZEN_NC = Path(r"tests\data\PRODUCTS\nephele\2024\02\09\240209_015959_P00_ZEN.LV1.nc")
 PPI_NC = Path(r"tests\data\PRODUCTS\nephele\2023\05\17\230517_084500_P00_PPI.LV1.nc")

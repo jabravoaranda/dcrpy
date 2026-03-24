@@ -473,10 +473,13 @@ name = "dcrpy"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "cycler" },
     { name = "loguru" },
     { name = "matplotlib" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.4.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "pandas", version = "2.3.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "pandas", version = "3.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "pyyaml" },
     { name = "rpgpy" },
     { name = "xarray", version = "2025.6.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
@@ -515,12 +518,13 @@ dev = [
 requires-dist = [
     { name = "black", marker = "extra == 'dev'", specifier = ">=24.0" },
     { name = "black", marker = "extra == 'full'", specifier = ">=24.0" },
+    { name = "cycler", specifier = ">=0.12" },
     { name = "loguru", specifier = ">=0.7" },
-    { name = "loguru", specifier = ">=0.7.0,<1" },
     { name = "matplotlib", specifier = ">=3.7" },
     { name = "netcdf4", marker = "extra == 'full'", specifier = ">=1.6" },
     { name = "netcdf4", marker = "extra == 'io'", specifier = ">=1.6" },
     { name = "numpy", specifier = ">=1.24" },
+    { name = "pandas", specifier = ">=2.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8" },
     { name = "pytest", marker = "extra == 'full'", specifier = ">=8" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5" },
