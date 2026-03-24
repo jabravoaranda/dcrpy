@@ -14,7 +14,7 @@ RADAR_PLOT_INFO = _read_yaml(Path(__file__).parent.absolute() / "plotting" / "in
 
 __version__ = "0.1.0"
 
-__all__ = ["RADAR_PLOT_INFO", "RADAR_INFO", "rpg_nc", "utils", "plotting", "types", "nebula", "nephele"]
+__all__ = ["RADAR_PLOT_INFO", "RADAR_INFO", "rpg_nc", "utils", "plotting", "types", "nebula"]
 
 
 __doc__ = """The top of the radar module that is compatible (at least) with GFAT radar: "NEPHELE" AND "NEBULA"
