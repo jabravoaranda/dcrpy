@@ -516,6 +516,7 @@ requires-dist = [
     { name = "black", marker = "extra == 'dev'", specifier = ">=24.0" },
     { name = "black", marker = "extra == 'full'", specifier = ">=24.0" },
     { name = "loguru", specifier = ">=0.7" },
+    { name = "loguru", specifier = ">=0.7.0,<1" },
     { name = "matplotlib", specifier = ">=3.7" },
     { name = "netcdf4", marker = "extra == 'full'", specifier = ">=1.6" },
     { name = "netcdf4", marker = "extra == 'io'", specifier = ">=1.6" },
