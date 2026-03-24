@@ -1,8 +1,6 @@
 from enum import Enum
 from typing import TypedDict
 
-from typing_extensions import NotRequired
-
 
 class RadarName(str, Enum):
     nph = "NEPHELE"

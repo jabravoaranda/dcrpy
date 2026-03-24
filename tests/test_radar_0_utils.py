@@ -2,12 +2,12 @@
 from pathlib import Path
 from pdb import set_trace
 import numpy as np
-from gfatpy.radar.utils import check_is_netcdf, histogram_intersection, ppi_to_cartessian, rhi_to_cartessian
+from dcrpy.utils import (check_is_netcdf, histogram_intersection, ppi_to_cartessian, rhi_to_cartessian)
 
-ZEN_NC = Path(r"tests\datos\PRODUCTS\nebula_ka\2024\03\13\240313_150001_P00_ZEN.LV1.nc")
+CLOUDNET_NC = Path(r"tests\data\cloudnet\20211218_granada_rpg-fmcw-94.nc")
 
 def test_check_path(radar_files):
-    path = check_is_netcdf(ZEN_NC)
+    path = check_is_netcdf(CLOUDNET_NC)
     assert path.exists()
 
 def test_ppi_to_cartessian():

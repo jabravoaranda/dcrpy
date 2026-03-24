@@ -2,9 +2,9 @@ from pathlib import Path
 from pdb import set_trace
 
 # from gfatpy.radar.rpg import rpg
-from gfatpy.radar.rpg_nc import rpg
+from dcrpy.rpg_nc import rpg
 
-ZEN_NC = Path(r"tests\datos\PRODUCTS\nebula_ka\2024\03\13\240313_150001_P00_ZEN.LV0.nc")
+ZEN_NC = Path(r"tests\data\PRODUCTS\nebula_ka\2024\03\13\240313_150001_P00_ZEN.LV0.nc")
 
 def test_init_zen():
     radar = rpg(ZEN_NC)    

@@ -11,22 +11,21 @@ import warnings
 import numpy as np
 import xarray as xr
 
-from gfatpy.utils.plot import apply_gap_size
-from gfatpy.radar.plot import RADAR_PLOT_INFO
-from gfatpy.radar.plot.utils import circular_grid
-from gfatpy.radar.utils import (
+from dcrpy.plotting.utils import apply_gap_size, color_list
+from dcrpy.plotting import RADAR_PLOT_INFO
+from dcrpy.plotting.utils import circular_grid
+from dcrpy.utils import (
     check_is_netcdf,
     enhance_rpgpy_dataset,
     ppi_to_cartessian,
     rhi_to_cartessian,
+    parse_datetime
 )
-from gfatpy.radar.retrieve.retrieve import (
+from dcrpy.retrieve.retrieve import (
     add_all_products_from_LV0,
     add_all_products_from_LV1,
     retrieve_dBZe,
 )
-from gfatpy.utils.plot import color_list
-from gfatpy.utils.utils import parse_datetime
 
 # from gfatpy.radar.utils_deprecated import ppi_to_cartessian, rhi_to_cartessian
 

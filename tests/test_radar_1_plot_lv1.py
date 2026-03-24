@@ -4,9 +4,9 @@ from datetime import datetime, timedelta
 
 from gfatpy.radar.rpg_nc import rpg
 
-ZEN_NC = Path(r"tests\datos\PRODUCTS\nephele\2024\02\09\240209_015959_P00_ZEN.LV1.nc")
-PPI_NC = Path(r"tests\datos\PRODUCTS\nephele\2023\05\17\230517_084500_P00_PPI.LV1.nc")
-RHI_NC = Path(r"tests\datos\PRODUCTS\nephele\2024\02\09\240209_022515_P00_RHI.LV1.nc")
+ZEN_NC = Path(r"tests\data\PRODUCTS\nephele\2024\02\09\240209_015959_P00_ZEN.LV1.nc")
+PPI_NC = Path(r"tests\data\PRODUCTS\nephele\2023\05\17\230517_084500_P00_PPI.LV1.nc")
+RHI_NC = Path(r"tests\data\PRODUCTS\nephele\2024\02\09\240209_022515_P00_RHI.LV1.nc")
 OUTPUT_DIR = Path(r"tests\figures")
 
 def test_ppi_quicklook(radar_files):

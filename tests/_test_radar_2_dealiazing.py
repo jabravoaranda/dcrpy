@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from gfatpy.radar.rpg_binary import rpg
 from gfatpy.radar.retrieve.retrieve import retrieve_dBZe
 
-ZEN_LV0 = Path(r"tests\datos\RAW\nebula_w\2024\03\19\240319_150001_P00_ZEN.LV0")
+ZEN_LV0 = Path(r"tests\data\RAW\nebula_w\2024\03\19\240319_150001_P00_ZEN.LV0")
 
 def test_dealiaze_one_height():
     radar = rpg(ZEN_LV0)

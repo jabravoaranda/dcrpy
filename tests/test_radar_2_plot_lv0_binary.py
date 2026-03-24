@@ -2,11 +2,11 @@ from pathlib import Path
 from datetime import datetime
 import matplotlib.pyplot as plt
 
-from gfatpy.radar.rpg_binary import rpg
-from gfatpy.radar.retrieve.retrieve import retrieve_dBZe
+from dcrpy.rpg_binary import rpg
+from dcrpy.retrieve.retrieve import retrieve_dBZe
 
-ZEN_LV0 = Path(r"tests\datos\RAW\nebula_ka\2024\03\13\240313_150001_P00_ZEN.LV0")
-
+ZEN_LV0 = Path(r"tests\data\RAW\nebula_ka\2024\03\13\240313_150001_P00_ZEN.LV0")
+OUTPUT_DIR = Path(r"tests\figures")
 
 def test_plot_testing():
     radar = rpg(ZEN_LV0)
@@ -93,7 +93,7 @@ def test_plot_testing():
     ax.axvline(x=0, color="black", linestyle="--")
     ax.legend(ncol=kwargs.get("ncol", 2), loc="upper right", fontsize=8)
 
-    fig.savefig("testing.png")
+    fig.savefig(OUTPUT_DIR / "testing.png")
     plt.close(fig)
     assert "doppler_spectrum_v" in data
     assert "doppler_spectrum_h" in data

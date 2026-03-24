@@ -2,9 +2,9 @@ from pathlib import Path
 
 from matplotlib.figure import Figure
 
-from gfatpy.radar.rpg_nc import rpg
+from dcrpy.rpg_nc import rpg
 
-ZEN_NC = Path(r"tests\datos\RAW\nephele\2021\09\13\210913_110000-110006_P05_ZEN.LV0.nc")
+ZEN_NC = Path(r"tests\data\RAW\nephele\2021\09\13\210913_110000-110006_P05_ZEN.LV0.nc")
 
 
 def test_plot_spectrum(radar_files):

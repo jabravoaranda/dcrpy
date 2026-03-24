@@ -2,9 +2,33 @@ from pathlib import Path
 from typing import Any
 import numpy as np
 import xarray as xr
+import datetime as dt
+import pandas as pd
 
 """ MODULE For General Radar Utilities
 """
+
+
+
+def datetime_np2dt(numpy_date):
+    """
+    Converts a numpy datetime64 object to a python datetime object
+    Input:
+      date - a np.datetime64 object
+    Output:
+      DATE - a python datetime object
+    """
+    # timestamp = ((date - np.datetime64('1970-01-01T00:00:00'))
+    #             / np.timedelta64(1, 's'))
+
+    try:
+        timestamp = pd.Timestamp(numpy_date).to_pydatetime()
+    except Exception as e:
+        timestamp = None
+        logger.error(str(e))
+        raise e
+    return timestamp
+
 
 def check_is_netcdf(path) -> Path:
     """Check if path is a netcdf file
@@ -277,3 +301,35 @@ def mergeChirps_LV0(data):
     
     finalData = xr.merge([finalData, temp])
     return finalData 
+
+
+def parse_datetime(
+    date: dt.datetime | dt.date | str | np.datetime64 | pd.DatetimeIndex | pd.Timestamp,
+) -> dt.datetime:
+    """The general way to cast strigs or datetimes to datetime python type
+
+    Args:
+        date (dt.datetime | str): This could be one of the supported formats.
+        The recommended one is ISO8601.
+
+    Returns:
+        dt.datetime: Python datetime format.
+    """
+
+    if isinstance(date, dt.datetime):
+        return date
+    elif isinstance(date, dt.date):
+        return dt.datetime(date.year, date.month, date.day)
+    elif isinstance(date, str):
+        try:
+            return dt.datetime.fromisoformat(date)
+        except ValueError:
+            return str_to_datetime(date)
+    elif isinstance(date, np.datetime64):
+        return datetime_np2dt(date)
+    elif isinstance(date, pd.DatetimeIndex):
+        return date.to_pydatetime()[0]
+    elif isinstance(date, pd.Timestamp):
+        return date.to_pydatetime()
+    else:
+        raise ValueError(f"{date} is not a valid date")
