@@ -4,9 +4,8 @@ from datetime import datetime
 from matplotlib.lines import Line2D
 from matplotlib.figure import Figure
 import xarray as xr
-from gfatpy.radar.rpg_nc import rpg
-from gfatpy.radar.utils import check_is_netcdf
-from gfatpy.utils.utils import parse_datetime
+from dcrpy.rpg_nc import rpg
+from dcrpy.utils import check_is_netcdf, parse_datetime
 
 
 class nebula():

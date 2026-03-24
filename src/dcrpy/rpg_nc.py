@@ -27,9 +27,6 @@ from dcrpy.retrieve.retrieve import (
     retrieve_dBZe,
 )
 
-# from gfatpy.radar.utils_deprecated import ppi_to_cartessian, rhi_to_cartessian
-
-
 class rpg:
     """Class to handle RPG netcdf files."""
 

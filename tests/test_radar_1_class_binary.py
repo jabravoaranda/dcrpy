@@ -1,7 +1,6 @@
 from pathlib import Path
 import xarray as xr
 
-# from gfatpy.radar.rpg import rpg
 from dcrpy.rpg_binary import rpg
 
 ZEN_LV0 = Path(r"tests\data\RAW\nebula_ka\2024\03\13\240313_150001_P00_ZEN.LV0")

@@ -4,9 +4,6 @@ import xarray as xr
 from rpgpy import read_rpg
 from rpgpy.spcutil import scale_spectra
 
-# from gfatpy.radar._dealiazing import dealiaze, dealiazeOneHeight
-
-
 class rpg:
     def __init__(self, path: Path):
         self.path = path

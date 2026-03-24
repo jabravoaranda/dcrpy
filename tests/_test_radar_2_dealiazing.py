@@ -2,8 +2,8 @@ from pathlib import Path
 from datetime import datetime
 import matplotlib.pyplot as plt
 
-from gfatpy.radar.rpg_binary import rpg
-from gfatpy.radar.retrieve.retrieve import retrieve_dBZe
+from dcrpy.rpg_binary import rpg
+from dcrpy.retrieve.retrieve import retrieve_dBZe
 
 ZEN_LV0 = Path(r"tests\data\RAW\nebula_w\2024\03\19\240319_150001_P00_ZEN.LV0")
 
