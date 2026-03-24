@@ -13,8 +13,11 @@ def test_init_zen():
     assert radar.type == "ZEN"
     assert isinstance(raw, dict)
     assert isinstance(header, dict)
+    
+    assert 'FileCode' in header.keys()
+    assert 'TotSpec' in raw.keys()
 
 def test_load_data():
-    radar = rpg(ZEN_LV0)    
+    radar = rpg(ZEN_LV0)
     data = radar.dataset
     assert isinstance(data, xr.Dataset)

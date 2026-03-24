@@ -62,7 +62,7 @@ def test_plot_2d_spectrum(radar_files):
 #     #     range_slice=[6000.0, 6050.0],
 #     #     **{"output_dir": Path(r"tests\figures")}
 #     # )
-#     from gfatpy.radar.retrieve.retrieve import retrieve_dBZe
+#     from dcrpy.retrieve.retrieve import retrieve_dBZe
 #     import matplotlib.pyplot as plt
 #     import numpy as np
 

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-# from gfatpy.radar.rpg import rpg
+# from dcrpy.rpg import rpg
 from dcrpy.rpg_nc import rpg
 
 ZEN_NC = Path(r"tests\data\PRODUCTS\nephele\2024\02\09\240209_015959_P00_ZEN.LV1.nc")

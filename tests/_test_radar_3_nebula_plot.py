@@ -2,7 +2,7 @@ import numpy as np
 from datetime import datetime
 import matplotlib.pyplot as plt
 from pathlib import Path
-from dcrpy.nebula import nebula
+from dcrpy.deprecated_nebula import nebula
 
 MEAS_TYPE = "ZEN"
 BANDS = ["ka", "w"]

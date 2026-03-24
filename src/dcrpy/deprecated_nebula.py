@@ -1,19 +1,13 @@
 import numpy as np
-import yaml
 from pathlib import Path
 from datetime import datetime
 from matplotlib.lines import Line2D
 from matplotlib.figure import Figure
 import xarray as xr
 from dcrpy.rpg_nc import rpg
-from dcrpy.utils import check_is_netcdf, parse_datetime
-from .types import RadarInfoType
+from dcrpy.utils import check_is_netcdf
+from dcrpy.utils import parse_datetime
 
-def _read_yaml(path: Path):
-    with open(path, "r") as stream:
-        return yaml.safe_load(stream)
-
-RADAR_INFO: RadarInfoType = _read_yaml(Path(__file__).parent.absolute() / "info.yml")
 
 class nebula():
     def __init__(self, ka_nc_path: Path, ww_nc_path: Path):

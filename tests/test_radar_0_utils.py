@@ -1,8 +1,8 @@
 
-from pathlib import Path
-from pdb import set_trace
 import numpy as np
-from dcrpy.utils import (check_is_netcdf, histogram_intersection, ppi_to_cartessian, rhi_to_cartessian)
+from pathlib import Path
+
+from dcrpy.utils import check_is_netcdf, histogram_intersection, ppi_to_cartessian, rhi_to_cartessian
 
 CLOUDNET_NC = Path(r"tests\data\cloudnet\20211218_granada_rpg-fmcw-94.nc")
 

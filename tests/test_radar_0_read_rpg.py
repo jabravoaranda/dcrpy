@@ -9,3 +9,4 @@ def test_read_rpg():
 
     assert isinstance(header, dict)
     assert isinstance(data, dict)
+    

@@ -1,13 +1,65 @@
+import re
 from pathlib import Path
 from typing import Any
 import numpy as np
 import xarray as xr
 import datetime as dt
 import pandas as pd
+from loguru import logger
 
 """ MODULE For General Radar Utilities
 """
 
+def str_to_datetime(date_str: str) -> dt.datetime:
+    """
+
+    Parameters
+    ----------
+    date_str: str
+        date in string format (see possible formats below)
+
+    Returns
+    -------
+
+    """
+    assert isinstance(date_str, str), "date_str must be String Type"
+
+    formats = [
+        (r"\d{4}\d{2}\d{2}T\d{2}\d{2}\d{2}", "%Y%m%dT%H%M%S"),
+        (r"\d{4}\d{2}\d{2}_\d{2}\d{2}\d{2}", "%Y%m%d_%H%M%S"),
+        (r"\d{4}\d{2}\d{2}T\d{2}\d{2}", "%Y%m%dT%H%M"),
+        (r"\d{4}\d{2}\d{2}_\d{2}\d{2}", "%Y%m%d_%H%M"),
+        (r"\d{4}\d{2}\d{2}T\d{2}", "%Y%m%dT%H"),
+        (r"\d{4}\d{2}\d{2}_\d{2}", "%Y%m%d_%H"),
+        (r"\d{4}\d{2}\d{2}", "%Y%m%d"),
+        (r"\d{4}\d{2}", "%Y%m"),
+        (r"\d{4}", "%Y"),
+    ]
+
+    i = 0
+    match = False
+    date_format = ""
+    date_dt = None
+    while not match:
+        if i < len(formats):
+            candidate = re.search(formats[i][0], date_str)
+            if candidate is not None:
+                date_format = formats[i][1]
+                match = True
+            else:
+                i += 1
+        else:
+            match = True
+    if date_format is not None:
+        try:
+            date_dt = dt.datetime.strptime(date_str, date_format)
+        except Exception as e:
+            print(f"{date_str} has more complex format than found ({date_format})")
+            raise NotImplementedError(e.with_traceback)
+    else:
+        raise RuntimeError(f"Cannot understand the format of {date_str}")
+
+    return date_dt
 
 
 def datetime_np2dt(numpy_date):
@@ -28,6 +80,38 @@ def datetime_np2dt(numpy_date):
         logger.error(str(e))
         raise e
     return timestamp
+
+
+def parse_datetime(
+    date: dt.datetime | dt.date | str | np.datetime64 | pd.DatetimeIndex | pd.Timestamp,
+) -> dt.datetime:
+    """The general way to cast strigs or datetimes to datetime python type
+
+    Args:
+        date (dt.datetime | str): This could be one of the supported formats.
+        The recommended one is ISO8601.
+
+    Returns:
+        dt.datetime: Python datetime format.
+    """
+
+    if isinstance(date, dt.datetime):
+        return date
+    elif isinstance(date, dt.date):
+        return dt.datetime(date.year, date.month, date.day)
+    elif isinstance(date, str):
+        try:
+            return dt.datetime.fromisoformat(date)
+        except ValueError:
+            return str_to_datetime(date)
+    elif isinstance(date, np.datetime64):
+        return datetime_np2dt(date)
+    elif isinstance(date, pd.DatetimeIndex):
+        return date.to_pydatetime()[0]
+    elif isinstance(date, pd.Timestamp):
+        return date.to_pydatetime()
+    else:
+        raise ValueError(f"{date} is not a valid date")
 
 
 def check_is_netcdf(path) -> Path:
@@ -248,6 +332,7 @@ def mergeChirps_LV0(data):
         ChVel = 'C{chirp}Vel'.format(chirp=chirp+1)
         
         #- calculate noise density:
+        breakpoint()
         NoiseDensV = data[ChVNoisePow]/doppLen[chirp]
         NoiseDensH = data[ChHNoisePow]/doppLen[chirp]
         #- now we need to decompose the VSpec, because this is not actually the vert. Spectrum but saved as a composite of H and V
@@ -301,35 +386,3 @@ def mergeChirps_LV0(data):
     
     finalData = xr.merge([finalData, temp])
     return finalData 
-
-
-def parse_datetime(
-    date: dt.datetime | dt.date | str | np.datetime64 | pd.DatetimeIndex | pd.Timestamp,
-) -> dt.datetime:
-    """The general way to cast strigs or datetimes to datetime python type
-
-    Args:
-        date (dt.datetime | str): This could be one of the supported formats.
-        The recommended one is ISO8601.
-
-    Returns:
-        dt.datetime: Python datetime format.
-    """
-
-    if isinstance(date, dt.datetime):
-        return date
-    elif isinstance(date, dt.date):
-        return dt.datetime(date.year, date.month, date.day)
-    elif isinstance(date, str):
-        try:
-            return dt.datetime.fromisoformat(date)
-        except ValueError:
-            return str_to_datetime(date)
-    elif isinstance(date, np.datetime64):
-        return datetime_np2dt(date)
-    elif isinstance(date, pd.DatetimeIndex):
-        return date.to_pydatetime()[0]
-    elif isinstance(date, pd.Timestamp):
-        return date.to_pydatetime()
-    else:
-        raise ValueError(f"{date} is not a valid date")
