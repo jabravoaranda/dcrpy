@@ -17,6 +17,7 @@ def pytest_addoption(parser):
     parser.addoption("--runnpl", action="store_true", default=False)
     parser.addoption("--runnbl", action="store_true", default=False)
     parser.addoption("--runradar", action="store_true", default=False)
+    parser.addoption("--save-test-figures", action="store_true", default=False)
 
 
 @pytest.fixture(scope="session")
@@ -37,6 +38,11 @@ def run_nbl(pytestconfig):
 @pytest.fixture(scope="session")
 def run_radar(pytestconfig):
     return pytestconfig.getoption("runradar")
+
+
+@pytest.fixture(scope="session")
+def save_test_figures(pytestconfig):
+    return pytestconfig.getoption("save_test_figures")
 
 @pytest.fixture(scope="session")
 def radar_files(run_radar, run_nbl, run_npl, cleanup):

@@ -23,6 +23,11 @@ class rpg:
     _spectral_power_variables = frozenset(
         {"doppler_spectrum", "doppler_spectrum_h", "doppler_spectrum_v"}
     )
+    _spectral_variable_labels = {
+        "doppler_spectrum": "total",
+        "doppler_spectrum_h": "horizontal",
+        "doppler_spectrum_v": "vertical",
+    }
 
     def __init__(self, path: str | Path):
         self.path = Path(path)
@@ -210,6 +215,70 @@ class rpg:
 
         return data_array.where(np.isfinite(data_array), np.nan)
 
+    def _normalize_variables_to_plot(
+        self, variable_to_plot: str | list[str] | tuple[str, ...] | None
+    ) -> list[str]:
+        if variable_to_plot is None:
+            return ["doppler_spectrum"]
+        if isinstance(variable_to_plot, str):
+            return [variable_to_plot]
+
+        variables = list(variable_to_plot)
+        if not variables:
+            raise ValueError("variable_to_plot cannot be empty.")
+        return variables
+
+    def _resolve_plot_colors(
+        self, variables_to_plot: list[str], **kwargs
+    ) -> list[str] | np.ndarray:
+        if len(variables_to_plot) == 1:
+            return [kwargs.get("color", "black")]
+
+        if kwargs.get("color_list") is not None:
+            return kwargs["color_list"]
+
+        default_colors = ["black", "tab:blue", "tab:red", "tab:green"]
+        if len(variables_to_plot) <= len(default_colors):
+            return default_colors[: len(variables_to_plot)]
+        return color_list(len(variables_to_plot))
+
+    def _build_plot_label(self, base_label: str, variable: str, multi: bool) -> str:
+        if not multi:
+            return base_label
+        variable_label = self._spectral_variable_labels.get(variable, variable)
+        return f"{base_label} | {variable_label}"
+
+    def _set_plot_ylabel(self, ax: Axes, variables_to_plot: list[str]) -> None:
+        if len(variables_to_plot) == 1:
+            variable = variables_to_plot[0]
+            if variable in self._spectral_power_variables:
+                ax.set_ylabel("Power density, [dB]")
+            else:
+                selected = self.dataset[variable]
+                ax.set_ylabel(
+                    f"{selected.attrs.get('long_name', variable)}, "
+                    f"[{selected.attrs.get('units', '?')}]"
+                )
+            return
+
+        if all(variable in self._spectral_power_variables for variable in variables_to_plot):
+            ax.set_ylabel("Power density, [dB]")
+            return
+
+        ax.set_ylabel("Value")
+
+    def _maybe_add_legend(self, ax: Axes, **kwargs) -> None:
+        handles, labels = ax.get_legend_handles_labels()
+        visible_labels = [
+            label for label in labels if label and not label.startswith("_")
+        ]
+        if visible_labels:
+            ax.legend(
+                ncol=kwargs.get("ncol", 2),
+                loc="upper right",
+                fontsize=kwargs.get("fontsize_legend", kwargs.get("fontsize", 8)),
+            )
+
     def plot_spectrum(
         self, target_time: datetime | np.datetime64, target_range: float, **kwargs
     ) -> tuple[Figure, Path | None]:
@@ -233,19 +302,24 @@ class rpg:
             label = time_str
 
         data = self.dataset
-        variable_to_plot = kwargs.get("variable_to_plot", "doppler_spectrum")
+        variables_to_plot = self._normalize_variables_to_plot(
+            kwargs.get("variable_to_plot", "doppler_spectrum")
+        )
+        colors = self._resolve_plot_colors(variables_to_plot, **kwargs)
         chirp_number = int(
             data["chirp_number"].sel(range=target_range, method="nearest").item()
         )
         selected = data.sel(time=target_time, range=target_range, method="nearest")
-        plot_data = self._spectral_plot_data(selected, chirp_number, variable_to_plot)
-
-        if np.isfinite(plot_data.values).any():
-            plot_data.plot(  # type: ignore[arg-type]
-                ax=ax,
-                color=kwargs.get("color", "black"),
-                label=label,
-            )
+        for variable, color in zip(variables_to_plot, colors):
+            plot_data = self._spectral_plot_data(selected, chirp_number, variable)
+            if np.isfinite(plot_data.values).any():
+                plot_data.plot(  # type: ignore[arg-type]
+                    ax=ax,
+                    color=color,
+                    label=self._build_plot_label(
+                        label, variable, multi=len(variables_to_plot) > 1
+                    ),
+                )
 
         velocity_limits = kwargs.get("velocity_limits")
         if velocity_limits is None:
@@ -255,13 +329,10 @@ class rpg:
             ax.set_xlim(*velocity_limits)
 
         ax.set_xlabel("Doppler velocity, [m/s]")
-        ax.set_ylabel(
-            f"{plot_data.attrs.get('long_name', variable_to_plot)}, "
-            f"[{plot_data.attrs.get('units', '?')}]"
-        )
+        self._set_plot_ylabel(ax, variables_to_plot)
         ax.set_title(f"Time: {str(target_time).split('.')[0]}, Range: {target_range}")
         ax.axvline(x=0, color="black", linestyle="--")
-        ax.legend(ncol=kwargs.get("ncol", 2), loc="upper right", fontsize=8)
+        self._maybe_add_legend(ax, **kwargs)
 
         filepath = None
         if kwargs.get("savefig", True):
@@ -332,11 +403,7 @@ class rpg:
             kwargs.get("title", default_title),
             fontdict={"fontsize": kwargs.get("fontsize_title", 12)},
         )
-        ax.legend(
-            ncol=kwargs.get("ncol", 2),
-            loc="upper right",
-            fontsize=kwargs.get("fontsize_legend", 12),
-        )
+        self._maybe_add_legend(ax, **kwargs)
         ax.set_xlabel(
             "Doppler velocity, [m/s]", fontsize=kwargs.get("fontsize_labels", 12)
         )
@@ -407,7 +474,7 @@ class rpg:
             f"Range: {target_range} | Period: {original_time_slice[0]:%Y%m%d} "
             f"{original_time_slice[0]:%H:%M:%S} - {original_time_slice[-1]:%H:%M:%S}"
         )
-        ax.legend(ncol=kwargs.get("ncol", 2), loc="upper right", fontsize=8)
+        self._maybe_add_legend(ax, **kwargs)
 
         fig.tight_layout()
         filepath = None
@@ -623,7 +690,7 @@ class rpg:
         ax.grid(which="major", color="gray", linestyle="--", linewidth=0.5)
         ax.grid(which="minor", axis="x", color="gray", linestyle=":", linewidth=0.5)
         ax.set_title(title_str)
-        ax.legend(ncol=kwargs.get("ncol", 2), loc="upper right", fontsize=8)
+        self._maybe_add_legend(ax, **kwargs)
         fig.tight_layout()
 
         filepath = None
