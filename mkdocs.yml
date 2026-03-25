@@ -1,7 +1,7 @@
 site_name: dcrpy
 site_description: Doppler Cloud Radar processing and analysis
-repo_url: https://github.com/juanpallotta/dcrpy
-repo_name: juanpallotta/dcrpy
+repo_url: https://github.com/jabravoaranda/dcrpy
+repo_name: jabravoaranda/dcrpy
 theme:
   name: material
 nav:
