@@ -5,7 +5,13 @@ import os
 import requests
 
 def retrieve_dBZe(Ze: xr.DataArray, band: str) -> xr.DataArray:
-    dBZe = xr.apply_ufunc( lambda x: 10 * np.log10(x), Ze , dask='parallelized')  # convert to dBZ, 10log10(x) = 10 * log10(x)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        dBZe = xr.apply_ufunc(
+            lambda x: 10 * np.log10(x),
+            Ze,
+            dask='parallelized',
+        )  # convert to dBZ, 10log10(x) = 10 * log10(x)
+    dBZe = dBZe.where(np.isfinite(dBZe), np.nan)
     dBZe.attrs = {"long_name": f"{band}-band equivalent reflectivity", "units": "dBZe"}
     return dBZe
 
@@ -117,7 +123,17 @@ def retrieve_NoiseDens(data: xr.Dataset) -> tuple[xr.DataArray, xr.DataArray]:
     return noise_density_h, noise_density_v
 
 def retrieve_doppler_spectrum_v(data: xr.Dataset) -> xr.DataArray:
-    return 4 * data['doppler_spectrum'] - data['doppler_spectrum_h'] - 2 * data['covariance_spectrum_re']
+    spectrum_v = (
+        4 * data['doppler_spectrum']
+        - data['doppler_spectrum_h']
+        - 2 * data['covariance_spectrum_re']
+    )
+    spectrum_v.name = 'doppler_spectrum_v'
+    spectrum_v.attrs = {
+        "long_name": "Vertical power density",
+        "units": "linear Ze",
+    }
+    return spectrum_v
 
 def retrieve_spec_snr_h(data: xr.Dataset) -> xr.DataArray:
     noise_density_h, _ = retrieve_NoiseDens(data)
@@ -167,10 +183,23 @@ def retrieve_PhiDp(data: xr.Dataset) -> xr.DataArray:
 
 def retrieve_spectral_ZDR(data: xr.Dataset) -> xr.DataArray:
     # Calculate the differential reflectivity
+    if 'doppler_spectrum_v' not in data:
+        data = data.copy()
+        data['doppler_spectrum_v'] = retrieve_doppler_spectrum_v(data)
     ratio = data['doppler_spectrum_h'] / data['doppler_spectrum_v']
     ratio = ratio.where(ratio > 0, np.nan)  # Replace invalid values with NaN
 
-    ratio = xr.DataArray(10 * np.log10(ratio), coords=data['doppler_spectrum_h'].coords, dims=data['doppler_spectrum_h'].dims)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        ratio = xr.DataArray(
+            10 * np.log10(ratio),
+            coords=data['doppler_spectrum_h'].coords,
+            dims=data['doppler_spectrum_h'].dims,
+        )
+    ratio = ratio.where(np.isfinite(ratio), np.nan)
+    ratio.attrs = {
+        "long_name": "Spectral differential reflectivity",
+        "units": "dB",
+    }
 
     return ratio
 
