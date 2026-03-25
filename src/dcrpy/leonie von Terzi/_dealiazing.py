@@ -131,7 +131,6 @@ def dealiazeOneHeight(r, data):
 	for index_ in [h_index, v_index, zdr_index]:
 		aliazing_flag = aliazing_flag or (ext_vel[index_] < -maxVel and ext_vel[index_] > -extension_left*maxVel)		
 	
-	breakpoint()
 	if (~np.isnan(sZDR.sel(spectrum=maxVel,method='nearest')) or ~np.isnan(sZDR.sel(spectrum=-maxVel,method='nearest')) or ~np.isnan(sZDR.sel(spectrum=-maxVel+dv,method='nearest')) 
 		or ~np.isnan(sZDR.sel(spectrum=maxVel-dv,method='nearest')) or ~np.isnan(sZDR.sel(spectrum=-maxVel+2*dv,method='nearest')) or ~np.isnan(sZDR.sel(spectrum=maxVel-2*dv,method='nearest')) 
 		or ~np.isnan(sZDR.sel(spectrum=-maxVel+3*dv,method='nearest')) or ~np.isnan(sZDR.sel(spectrum=maxVel-3*dv,method='nearest'))): 

@@ -332,7 +332,6 @@ def mergeChirps_LV0(data):
         ChVel = 'C{chirp}Vel'.format(chirp=chirp+1)
         
         #- calculate noise density:
-        breakpoint()
         NoiseDensV = data[ChVNoisePow]/doppLen[chirp]
         NoiseDensH = data[ChHNoisePow]/doppLen[chirp]
         #- now we need to decompose the VSpec, because this is not actually the vert. Spectrum but saved as a composite of H and V
