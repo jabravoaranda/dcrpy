@@ -50,6 +50,12 @@ full = [
   "black>=24.0",
   "netCDF4>=1.6",
 ]
+docs = [
+  "mkdocs>=1.6",
+  "mkdocs-material>=9.5",
+  "mkdocstrings[python]>=0.28",
+  "pymdown-extensions>=10.0",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/dcrpy"]

@@ -32,6 +32,7 @@ def _select_lv0_file() -> Path:
 
 
 ZEN = _select_lv0_file()
+TEST_FILE_STEM = Path(__file__).stem
 
 
 @pytest.fixture(scope="module")
@@ -40,21 +41,9 @@ def radar() -> rpg:
 
 
 @pytest.fixture()
-def plot_output_dir(
-    tmp_path: Path, request: pytest.FixtureRequest, save_test_figures: bool
-) -> Path:
+def plot_output_root(tmp_path: Path, save_test_figures: bool) -> Path:
     if save_test_figures:
-        safe_name = request.node.name
-        for old, new in (
-            ("[", "_"),
-            ("]", ""),
-            (":", "_"),
-            ("/", "_"),
-            ("\\", "_"),
-            (" ", "_"),
-        ):
-            safe_name = safe_name.replace(old, new)
-        output_dir = Path("tests/figures") / safe_name
+        output_dir = Path("tests/figures")
     else:
         output_dir = tmp_path / "figures"
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -86,6 +75,12 @@ def _write_selection_summary(output_dir: Path, **metadata: object) -> None:
     summary = output_dir / "selection.txt"
     lines = [f"{key}: {value}" for key, value in metadata.items()]
     summary.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _case_output_dir(root: Path, suffix: str) -> Path:
+    output_dir = root / f"{TEST_FILE_STEM}-{suffix}"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    return output_dir
 
 
 def _constrained_dataset(radar: rpg) -> xr.Dataset:
@@ -153,7 +148,8 @@ def _sample_time_slice_for_range(radar: rpg) -> tuple[float, tuple[datetime, dat
     )
 
 
-def test_plot_spectrum_multi_variable_overlay(radar: rpg, plot_output_dir: Path):
+def test_plot_spectrum_multi_variable_overlay(radar: rpg, plot_output_root: Path):
+    plot_output_dir = _case_output_dir(plot_output_root, "spectrum_overlay")
     target_time, range_values = _sample_time_and_ranges(radar)
     target_range = range_values[min(1, len(range_values) - 1)]
     _write_selection_summary(
@@ -184,7 +180,8 @@ def test_plot_spectrum_multi_variable_overlay(radar: rpg, plot_output_dir: Path)
     plt.close(fig)
 
 
-def test_plot_spectra_by_range(radar: rpg, plot_output_dir: Path):
+def test_plot_spectra_by_range(radar: rpg, plot_output_root: Path):
+    plot_output_dir = _case_output_dir(plot_output_root, "spectra_by_range")
     target_time, range_values = _sample_time_and_ranges(radar)
     if len(range_values) < 2:
         raise AssertionError("Need at least two valid range gates for spectra-by-range.")
@@ -216,7 +213,10 @@ def test_plot_spectra_by_range(radar: rpg, plot_output_dir: Path):
     "variable_to_plot",
     ["doppler_spectrum", "doppler_spectrum_h"],
 )
-def test_plot_2d_spectrum(radar: rpg, plot_output_dir: Path, variable_to_plot: str):
+def test_plot_2d_spectrum(radar: rpg, plot_output_root: Path, variable_to_plot: str):
+    plot_output_dir = _case_output_dir(
+        plot_output_root, f"2d_spectrum_{variable_to_plot}"
+    )
     target_time, range_values = _sample_time_and_ranges(radar)
     range_slice = (range_values[0], range_values[-1])
     _write_selection_summary(
@@ -244,7 +244,8 @@ def test_plot_2d_spectrum(radar: rpg, plot_output_dir: Path, variable_to_plot: s
     plt.close(fig)
 
 
-def test_plot_spectra_by_time(radar: rpg, plot_output_dir: Path):
+def test_plot_spectra_by_time(radar: rpg, plot_output_root: Path):
+    plot_output_dir = _case_output_dir(plot_output_root, "spectra_by_time")
     target_range, time_slice = _sample_time_slice_for_range(radar)
     _write_selection_summary(
         plot_output_dir,
@@ -271,7 +272,8 @@ def test_plot_spectra_by_time(radar: rpg, plot_output_dir: Path):
 
 
 @pytest.mark.parametrize("variable", ["dBZe", "sZDRmax"])
-def test_plot_profile(radar: rpg, plot_output_dir: Path, variable: str):
+def test_plot_profile(radar: rpg, plot_output_root: Path, variable: str):
+    plot_output_dir = _case_output_dir(plot_output_root, f"profile_{variable}")
     data = _constrained_dataset(radar)
     time_index = min(10, data.sizes["time"] - 1)
     time_end_index = min(time_index + 2, data.sizes["time"] - 1)

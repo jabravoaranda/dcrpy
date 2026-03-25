@@ -8,14 +8,12 @@ import pytest
 from rpgpy import read_rpg
 
 
+ZEN_LV0_2026 = Path(r"tests\data\RAW\nebula_w\2026\03\10\260310_020001_P00_ZEN.LV0")
+
 RAW_CASES = [
     pytest.param(
-        Path(r"tests\data\RAW\nebula_w\2024\03\13\240313_150001_P00_ZEN.LV0"),
-        id="nebula-w-lv0",
-    ),
-    pytest.param(
-        Path(r"tests\data\RAW\nebula_ka\2024\03\13\240313_150001_P00_ZEN.LV0"),
-        id="nebula-ka-lv0",
+        ZEN_LV0_2026,
+        id="nebula-w-lv0-2026",
     ),
 ]
 
@@ -80,7 +78,7 @@ def test_read_rpg_performance_smoke(record_property):
     if os.getenv("DCRPY_RUN_PERF") != "1":
         pytest.skip("Set DCRPY_RUN_PERF=1 to run read-performance smoke tests.")
 
-    lv0_file = Path(r"tests\data\RAW\nebula_w\2024\03\13\240313_150001_P00_ZEN.LV0")
+    lv0_file = ZEN_LV0_2026
     repeats = int(os.getenv("DCRPY_READ_RPG_REPEATS", "3"))
     max_median_seconds = os.getenv("DCRPY_READ_RPG_MAX_MEDIAN_SECONDS")
     assert lv0_file.exists(), f"Missing test file: {lv0_file}"

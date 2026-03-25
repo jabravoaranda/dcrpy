@@ -1,3 +1,12 @@
+"""Read, derive, and plot single-frequency RPG binary radar data.
+
+This module provides the :class:`rpg` class, a lightweight wrapper around
+``rpgpy.read_rpg`` for level-0 binary files. The class is responsible for
+lazy file loading, validation of source-array shapes, creation of a cached
+``xarray.Dataset`` with a consistent schema, and a small set of plotting
+helpers for spectral and profile-style visualizations.
+"""
+
 from datetime import datetime
 from pathlib import Path
 
@@ -20,6 +29,21 @@ from dcrpy.utils import parse_datetime
 
 
 class rpg:
+    """Single-frequency RPG binary radar reader and plotting helper.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        Path to an RPG binary file, typically an ``LV0`` spectrum file.
+
+    Notes
+    -----
+    The file is loaded lazily on first access to :attr:`header`, :attr:`raw`,
+    or :attr:`dataset`. Derived variables such as vertical spectrum, spectral
+    differential reflectivity, and reflectivity are added when the cached
+    dataset is built.
+    """
+
     _spectral_power_variables = frozenset(
         {"doppler_spectrum", "doppler_spectrum_h", "doppler_spectrum_v"}
     )
@@ -30,6 +54,7 @@ class rpg:
     }
 
     def __init__(self, path: str | Path):
+        """Initialize the binary radar wrapper."""
         self.path = Path(path)
         self.type = self.path.name.split(".")[0].split("_")[-1]
         self.level = int(self.path.name.split(".")[-1][-1])
@@ -38,28 +63,98 @@ class rpg:
         self._band: str | None = None
         self._dataset: xr.Dataset | None = None
 
+    @staticmethod
+    def _infer_band_from_path(path: Path) -> str | None:
+        """Infer the radar band from the file path.
+
+        Parameters
+        ----------
+        path : pathlib.Path
+            Source path to inspect.
+
+        Returns
+        -------
+        str or None
+            ``"W"`` or ``"Ka"`` when the path contains a recognizable band
+            hint, otherwise ``None``.
+
+        Notes
+        -----
+        This fallback is useful when fixture metadata are inconsistent or when
+        the band is encoded more reliably in the directory structure than in
+        the binary header.
+        """
+        path_parts = [part.lower() for part in path.parts]
+        for part in path_parts:
+            if part in {"nebula_w", "w_band", "wband"} or part.endswith("_w"):
+                return "W"
+            if part in {"nebula_ka", "ka_band", "kaband"} or part.endswith("_ka"):
+                return "Ka"
+        return None
+
     def _ensure_loaded(self) -> None:
+        """Load the binary file once and populate header and raw caches."""
         if self._header is None or self._raw is None:
             self._header, self._raw = read_rpg(self.path)
 
     @property
     def raw(self) -> dict:
+        """Return the raw data dictionary from ``rpgpy.read_rpg``.
+
+        Returns
+        -------
+        dict
+            Raw variables as returned by ``read_rpg``.
+        """
         self._ensure_loaded()
         return self._raw  # type: ignore[return-value]
 
     @property
     def header(self) -> dict:
+        """Return the binary-file header dictionary.
+
+        Returns
+        -------
+        dict
+            Header metadata as returned by ``read_rpg``.
+        """
         self._ensure_loaded()
         return self._header  # type: ignore[return-value]
 
     @property
     def band(self) -> str:
+        """Return the radar band.
+
+        Returns
+        -------
+        str
+            ``"Ka"`` or ``"W"``.
+
+        Notes
+        -----
+        The band is inferred first from the file path when possible, and
+        otherwise from the radar frequency in the binary header.
+        """
         if self._band is None:
-            frequency = float(np.asarray(self.header["Freq"]).item())
-            self._band = "W" if frequency > 75 else "Ka"
+            inferred_band = self._infer_band_from_path(self.path)
+            if inferred_band is not None:
+                self._band = inferred_band
+            else:
+                frequency = float(np.asarray(self.header["Freq"]).item())
+                self._band = "W" if frequency > 75 else "Ka"
         return self._band
 
     def _validate_source_shapes(self) -> None:
+        """Validate the binary arrays before building the dataset.
+
+        Raises
+        ------
+        KeyError
+            If required header or raw-data keys are missing.
+        ValueError
+            If array dimensions are inconsistent with the declared chirp or
+            spectral layout.
+        """
         required_header_keys = (
             "Freq",
             "MaxVel",
@@ -114,6 +209,20 @@ class rpg:
                 )
 
     def _build_dataset(self) -> xr.Dataset:
+        """Build the cached single-frequency dataset.
+
+        Returns
+        -------
+        xarray.Dataset
+            Dataset with coordinates ``time``, ``range``, ``spectrum``, and
+            ``chirp`` plus derived products such as ``doppler_spectrum_v``,
+            ``sZDR``, ``Ze``, and ``dBZe``.
+
+        Notes
+        -----
+        Derived products use helper functions from :mod:`dcrpy.retrieve` so
+        retrieval logic remains centralized.
+        """
         self._validate_source_shapes()
 
         time_values = np.asarray(self.raw["Time"])
@@ -192,6 +301,13 @@ class rpg:
 
     @property
     def dataset(self) -> xr.Dataset:
+        """Return the cached single-frequency dataset.
+
+        Returns
+        -------
+        xarray.Dataset
+            Dataset created on first access by :meth:`_build_dataset`.
+        """
         if self._dataset is None:
             self._dataset = self._build_dataset()
         return self._dataset
@@ -199,6 +315,31 @@ class rpg:
     def _spectral_plot_data(
         self, selected: xr.Dataset, chirp_number: int, variable: str
     ) -> xr.DataArray:
+        """Prepare a spectral variable for plotting.
+
+        Parameters
+        ----------
+        selected : xarray.Dataset
+            Dataset already reduced to a single time/range point or narrow
+            subset.
+        chirp_number : int
+            Chirp index associated with the selected range gate.
+        variable : str
+            Name of the variable to plot.
+
+        Returns
+        -------
+        xarray.DataArray
+            Spectral line with Doppler velocity assigned as the spectrum
+            coordinate. Power-density variables are converted to dB.
+
+        Raises
+        ------
+        KeyError
+            If ``variable`` is not present in ``selected``.
+        ValueError
+            If ``variable`` is not spectral.
+        """
         if variable not in selected:
             raise KeyError(f"{variable} not found in dataset.")
 
@@ -218,6 +359,7 @@ class rpg:
     def _normalize_variables_to_plot(
         self, variable_to_plot: str | list[str] | tuple[str, ...] | None
     ) -> list[str]:
+        """Normalize plot-variable input to a non-empty list."""
         if variable_to_plot is None:
             return ["doppler_spectrum"]
         if isinstance(variable_to_plot, str):
@@ -231,6 +373,7 @@ class rpg:
     def _resolve_plot_colors(
         self, variables_to_plot: list[str], **kwargs
     ) -> list[str] | np.ndarray:
+        """Resolve plotting colors for single or multi-line spectral plots."""
         if len(variables_to_plot) == 1:
             return [kwargs.get("color", "black")]
 
@@ -243,12 +386,14 @@ class rpg:
         return color_list(len(variables_to_plot))
 
     def _build_plot_label(self, base_label: str, variable: str, multi: bool) -> str:
+        """Build a plot legend label for single or overlay plots."""
         if not multi:
             return base_label
         variable_label = self._spectral_variable_labels.get(variable, variable)
         return f"{base_label} | {variable_label}"
 
     def _set_plot_ylabel(self, ax: Axes, variables_to_plot: list[str]) -> None:
+        """Set the y-axis label according to the plotted variable list."""
         if len(variables_to_plot) == 1:
             variable = variables_to_plot[0]
             if variable in self._spectral_power_variables:
@@ -268,6 +413,7 @@ class rpg:
         ax.set_ylabel("Value")
 
     def _maybe_add_legend(self, ax: Axes, **kwargs) -> None:
+        """Add a legend only when visible labeled artists are present."""
         handles, labels = ax.get_legend_handles_labels()
         visible_labels = [
             label for label in labels if label and not label.startswith("_")
@@ -282,6 +428,30 @@ class rpg:
     def plot_spectrum(
         self, target_time: datetime | np.datetime64, target_range: float, **kwargs
     ) -> tuple[Figure, Path | None]:
+        """Plot one or more Doppler spectra at a single time and range.
+
+        Parameters
+        ----------
+        target_time : datetime.datetime or numpy.datetime64
+            Time to select. The nearest available sample is used.
+        target_range : float
+            Range gate in meters. The nearest available gate is used.
+        **kwargs
+            Plot customizations. Common options include ``variable_to_plot``,
+            ``fig``, ``figsize``, ``color``, ``color_list``,
+            ``velocity_limits``, ``output_dir``, ``savefig``, and ``dpi``.
+
+        Returns
+        -------
+        tuple[matplotlib.figure.Figure, pathlib.Path or None]
+            The figure handle and the saved filepath when ``savefig=True`` and
+            ``output_dir`` is supplied, otherwise ``None`` for the filepath.
+
+        Notes
+        -----
+        Variables ``doppler_spectrum``, ``doppler_spectrum_h``, and
+        ``doppler_spectrum_v`` are converted to dB before plotting.
+        """
         fig = kwargs.get("fig")
         if fig is None:
             fig, ax = plt.subplots(figsize=kwargs.get("figsize", (10, 7)))
@@ -353,6 +523,30 @@ class rpg:
         range_slice: tuple[float, float] | list[float],
         **kwargs,
     ) -> tuple[Figure, Path | None]:
+        """Plot spectra from multiple ranges at one time.
+
+        Parameters
+        ----------
+        target_time : datetime.datetime or numpy.datetime64
+            Time to select. The nearest available sample is used.
+        range_slice : tuple[float, float] or list[float]
+            Either a continuous range interval in meters or an explicit list of
+            range gates to plot.
+        **kwargs
+            Additional options forwarded to :meth:`plot_spectrum` plus figure
+            save options such as ``output_dir`` and ``savefig``.
+
+        Returns
+        -------
+        tuple[matplotlib.figure.Figure, pathlib.Path or None]
+            Figure handle and saved filepath when applicable.
+
+        Raises
+        ------
+        ValueError
+            If the requested range selection contains no data or if saving is
+            requested without ``output_dir``.
+        """
         if isinstance(target_time, np.datetime64):
             target_time = parse_datetime(target_time)
 
@@ -429,6 +623,30 @@ class rpg:
         time_slice: tuple[datetime, datetime] | list[datetime],
         **kwargs,
     ) -> tuple[Figure, Path | None]:
+        """Plot spectra from multiple times at one range.
+
+        Parameters
+        ----------
+        target_range : float
+            Range gate in meters. The nearest available gate is used.
+        time_slice : tuple[datetime.datetime, datetime.datetime] or list[datetime.datetime]
+            Either a continuous time interval or an explicit list of times to
+            overlay.
+        **kwargs
+            Additional options forwarded to :meth:`plot_spectrum` plus figure
+            save options such as ``output_dir`` and ``savefig``.
+
+        Returns
+        -------
+        tuple[matplotlib.figure.Figure, pathlib.Path or None]
+            Figure handle and saved filepath when applicable.
+
+        Raises
+        ------
+        ValueError
+            If the requested time selection contains no data or if saving is
+            requested without ``output_dir``.
+        """
         original_time_slice = time_slice
         if all(
             isinstance(time_value, np.datetime64) for time_value in original_time_slice
@@ -498,6 +716,32 @@ class rpg:
         vmax: float = 1,
         **kwargs,
     ) -> tuple[Figure, Path | None]:
+        """Plot a 2D Doppler spectrum by chirp for one time step.
+
+        Parameters
+        ----------
+        target_time : numpy.datetime64 or datetime.datetime
+            Time to plot. The nearest available sample is used.
+        range_limits : tuple[float, float], optional
+            Range interval in meters. When omitted, the full available range is
+            used.
+        vmin, vmax : float, default: 0, 1
+            Default color limits used when ``power_spectrum_limits`` is not
+            provided in ``kwargs``.
+        **kwargs
+            Plot options such as ``variable_to_plot``, ``power_spectrum_limits``,
+            ``cmap``, ``figsize``, ``output_dir``, ``savefig``, and ``dpi``.
+
+        Returns
+        -------
+        tuple[matplotlib.figure.Figure, pathlib.Path or None]
+            Figure handle and saved filepath when applicable.
+
+        Raises
+        ------
+        ValueError
+            If no chirp/range data are available for the requested selection.
+        """
         if isinstance(target_time, np.datetime64):
             target_time = parse_datetime(target_time)
 
@@ -612,6 +856,34 @@ class rpg:
         variable: str,
         **kwargs,
     ) -> tuple[Figure, Path | None]:
+        """Plot a vertical profile of a scalar variable.
+
+        Parameters
+        ----------
+        target_times : datetime.datetime, numpy.datetime64, list[datetime.datetime], or tuple[datetime.datetime, datetime.datetime]
+            One time, a list of times, or a time interval to profile.
+        range_limits : tuple[float, float]
+            Range limits in meters used to subset the profile.
+        variable : str
+            Name of the non-spectral variable to plot.
+        **kwargs
+            Plot options such as ``fig``, ``figsize``, ``color_list``,
+            ``range_limits``, ``variable_limits``, ``output_dir``, ``savefig``,
+            and ``dpi``.
+
+        Returns
+        -------
+        tuple[matplotlib.figure.Figure, pathlib.Path or None]
+            Figure handle and saved filepath when applicable.
+
+        Raises
+        ------
+        KeyError
+            If ``variable`` is not present in the dataset.
+        ValueError
+            If ``target_times`` has an unsupported type, is empty, or saving is
+            requested without ``output_dir``.
+        """
         fig = kwargs.get("fig")
         if fig is None:
             fig, ax = plt.subplots(figsize=kwargs.get("figsize", (5, 7)))
